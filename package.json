@@ -1,6 +1,6 @@
 {
   "name": "@airplanegobrr/fmd-js-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An API for FMD!",
   "main": "fmd-api.js",
   "scripts": {
