@@ -85,32 +85,44 @@ class FMD_API {
     }
 
     /**
+     * 
+     * @returns {Promise<Number>}
+     */
+    async getLocationCount() {
+        try {
+            let responseDataSize = await axios.put(`${this.url}/locationDataSize`, { IDT: this.accessToken, Data: "unused" })
+            let newestLocationDataIndex = parseInt(responseDataSize.data.Data, 10) - 1;
+            return newestLocationDataIndex;
+        } catch (error) {
+            console.error("getLocationCount failed:", error);
+            throw new Error("Unable to get location count.");
+        }
+    }
+
+    /**
      * Get location
      * @property {Number} requestedIndex Location index
-     * @returns {LocationData}
+     * @returns {Promise<LocationData>}
      */
     async locate(requestedIndex) {
         try {
-        let responseDataSize = await axios.put(`${this.url}/locationDataSize`, { IDT: this.accessToken, Data: "unused" })
-        // console.log(responseDataSize.data)
-        let newestLocationDataIndex = parseInt(responseDataSize.data.Data, 10) - 1;
+            let newestLocationDataIndex = await this.getLocationCount()
 
-        if (requestedIndex == -1) {
-            requestedIndex = newestLocationDataIndex;
-            // currentLocationDataIndx = newestLocationDataIndex;
-        }
+            if (requestedIndex == -1) {
+                requestedIndex = newestLocationDataIndex;
+            }
 
-        let responseLocation = await axios.put(`${this.url}/location`, {
-            IDT: this.accessToken,
-            Data: requestedIndex.toString()
-        });
+            let responseLocation = await axios.put(`${this.url}/location`, {
+                IDT: this.accessToken,
+                Data: requestedIndex.toString()
+            });
 
-        // console.log("responseLocation", responseLocation.data)
+            // console.log("responseLocation", responseLocation.data)
 
-        let rawLocation = await decryptPacketModern(this.privateKey, responseLocation.data.Data)
-        let location = JSON.parse(rawLocation)
+            let rawLocation = await decryptPacketModern(this.privateKey, responseLocation.data.Data)
+            let location = JSON.parse(rawLocation)
 
-        return location
+            return location
         } catch (error) {
             console.error("Location get failed:", error);
             throw new Error("Unable to get location.");
@@ -120,12 +132,12 @@ class FMD_API {
     /**
      * Send command to device
      * @property {String} command Location index
-     * @returns {Boolean} Weather or not it was successful (this doesn't mean the command has been ran on the phone yet!)
+     * @returns {Promise<Boolean>} Weather or not it was successful (this doesn't mean the command has been ran on the phone yet!)
      */
     async sendToPhone(command) {
         try {
-        let res = await axios.post(`${this.url}/command`, { IDT: this.accessToken, Data: command })
-        return res.status == 200
+            let res = await axios.post(`${this.url}/command`, { IDT: this.accessToken, Data: command })
+            return res.status == 200
         } catch (error) {
             console.error("SendToPhone failed:", error);
             throw new Error("Unable to send command to FMD server.");
@@ -145,7 +157,7 @@ class FMD_API {
 
     /**
      * Get amount of pictures the server has
-     * @returns {Number} Count of picturs on the server
+     * @returns {Promise<Number>} Count of picturs on the server
      */
     async getPictureCount() {
         try {
@@ -160,7 +172,7 @@ class FMD_API {
     /**
      * Get picture the server has at the given index
      * @property {Number} pictureIndex Index of picture
-     * @returns {Buffer} Picture buffer
+     * @returns {Promise<Buffer>} Picture buffer
      */
     async getPicture(pictureIndex) {
         try {
