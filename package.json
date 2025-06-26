@@ -1,7 +1,7 @@
 {
   "name": "@airplanegobrr/fmd-js-api",
-  "version": "1.0.3",
-  "description": "An API for FMD!",
+  "version": "2.0.0",
+  "description": "An API for FMD! (For FMD server v0.11.0)",
   "main": "fmd-api.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

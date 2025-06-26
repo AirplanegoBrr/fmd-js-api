@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { hashPasswordForLogin, unwrapPrivateKey, decryptPacketModern } = require('./crypto');
+const { hashPasswordForLogin, unwrapPrivateKey, decryptPacketModern, signString } = require('./crypto');
 // This whole file is vodo magic
 const defaultServer = "https://fmd.nulide.de:1008/"
 
@@ -72,11 +72,14 @@ class FMD_API {
             let keyResponse = await axios.put(`${this.url}/key`, { IDT: this.accessToken, Data: "unused" })
             let keyData = keyResponse.data
             // console.log("keyData",keyData)
-            this.privateKey = await unwrapPrivateKey(this.password, keyData.Data)
-            // console.log("privateKey", this.privateKey)
+            const { decryptKey, signKey } = await unwrapPrivateKey(this.password, keyData.Data);
+            this.privateKeyForDecrypt = decryptKey;
+            this.privateKeyForSign = signKey;
+            
             return {
                 accessToken: this.accessToken,
-                privateKey: this.privateKey
+                privateKeyForDecrypt: this.privateKeyForDecrypt,
+                privateKeyForSign: this.privateKeyForSign
             }
         } catch (error) {
             console.error("Login failed:", error);
@@ -119,7 +122,7 @@ class FMD_API {
 
             // console.log("responseLocation", responseLocation.data)
 
-            let rawLocation = await decryptPacketModern(this.privateKey, responseLocation.data.Data)
+            let rawLocation = await decryptPacketModern(this.privateKeyForDecrypt, responseLocation.data.Data)
             let location = JSON.parse(rawLocation)
 
             return location
@@ -131,13 +134,26 @@ class FMD_API {
 
     /**
      * Send command to device
-     * @property {String} command Location index
-     * @returns {Promise<Boolean>} Weather or not it was successful (this doesn't mean the command has been ran on the phone yet!)
+     * @property {String} command Command to send
+     * @returns {Promise<Boolean>} Whether the command was successfully sent
      */
     async sendToPhone(command) {
         try {
-            let res = await axios.post(`${this.url}/command`, { IDT: this.accessToken, Data: command })
-            return res.status == 200
+            const unixTime = Date.now(); // Current time in milliseconds
+            const toSign = `${unixTime}:${command}`;
+            
+            // Sign the command using the private key
+            const signature = await signString(this.privateKeyForSign, toSign);
+
+            const commandData = {
+                IDT: this.accessToken,
+                Data: command,
+                UnixTime: unixTime,
+                CmdSig: signature
+            };
+
+            let res = await axios.post(`${this.url}/command`, commandData);
+            return res.status == 200;
         } catch (error) {
             console.error("SendToPhone failed:", error);
             throw new Error("Unable to send command to FMD server.");
@@ -178,7 +194,7 @@ class FMD_API {
         try {
             const resPicture = await axios.put(`${this.url}/picture`, { IDT: this.accessToken, Data: pictureIndex.toString() })
             let pictureDataRaw = resPicture.data
-            let pictureData = await decryptPacketModern(this.privateKey, pictureDataRaw)
+            let pictureData = await decryptPacketModern(this.privateKeyForDecrypt, pictureDataRaw)
             return Buffer.from(pictureData, "base64")
         } catch (error) {
             console.error("getPicture failed:", error);

@@ -67,14 +67,26 @@ async function unwrapPrivateKey(password, keyData) { // -> CryptoKey
 
     // console.log("binaryDer",binaryDer)
 
-    const rsaCryptoKey = await crypto.subtle.importKey(
+    const privateKeyForDecrypt = await crypto.subtle.importKey(
         "pkcs8",
         binaryDer,
         { name: "RSA-OAEP", hash: "SHA-256" },
-        false, // extractability
-        ["decrypt"] // keyUsages
+        false,
+        ["decrypt"]
     );
-    return rsaCryptoKey;
+
+    const privateKeyForSign = await crypto.subtle.importKey(
+        "pkcs8",
+        binaryDer,
+        { name: "RSA-PSS", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+
+    return {
+        decryptKey: privateKeyForDecrypt,
+        signKey: privateKeyForSign
+    };
 }
 
 async function decryptPacketModern(rsaCryptoKey, packetBase64) {
@@ -93,9 +105,25 @@ async function decryptPacketModern(rsaCryptoKey, packetBase64) {
     return plaintextString
 }
 
+async function signString(privateKey, dataString) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(dataString);
+
+    const signature = await crypto.subtle.sign(
+        {
+            name: "RSA-PSS",
+            saltLength: 32,
+        },
+        privateKey,
+        data
+    );
+
+    return Buffer.from(signature).toString('base64');
+}
 
 module.exports = {
     hashPasswordForLogin,
     unwrapPrivateKey,
-    decryptPacketModern
+    decryptPacketModern,
+    signString
 }

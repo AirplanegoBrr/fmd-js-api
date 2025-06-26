@@ -1,16 +1,12 @@
 # @airplanegobrr/fmd-js-api
 
-This is an API for the [FMD Server](https://gitlab.com/Nulide/findmydeviceserver) (Version 0.5.0)
+This is an API for the [FMD Server](https://gitlab.com/fmd-foss/fmd-server) (Version 0.11.0)
 
-Android app: [FMD App](https://gitlab.com/Nulide/findmydevice)
+Android app: [FMD App](https://gitlab.com/fmd-foss/fmd-android)
 
-I've been working on this project on and off for around 3+++ months.
+This uses the `Modern` encrytion, the API is based off the scripts found in [FMD Server Web](https://gitlab.com/fmd-foss/fmd-server) and looking at the network logs
 
-Yeah I know, I am really bad with cryptography so thats why it took so long.
-
-This uses the `Modern` encrytion, the API is based off the scripts found in [FMD Server Web](https://gitlab.com/Nulide/findmydeviceserver/-/tree/master/web?ref_type=heads) and looking at the network logs
-
-This uses `axios`, `argon2` (Making sure to set `argon2.limits.timeCost.min` to `1`, no clue what that means) and `@peculiar/webcrypto`
+This uses `axios`, `argon2`, and `@peculiar/webcrypto`
 
 This also has [JsDocs](fmd-api.js#L6) so [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense) works!
 
@@ -58,6 +54,9 @@ fmdAPI.login().then(async (data)=>{
 - Q: How do I delete my device?
 - A: This is a big risk, I didn't add it as again its a risk- if you want to do it do `fmdAPI.sendToPhone("delete <pin>")`, this will **NOT** be added to the commands object- too risky
 
-## Note:
+# Updates
 
-I HATE CRYPTO, I HATE CRYPTO, I HATE CRYPTO, I HATE CRYPTO, I HATE CRYPTO, I HATE CRYPTO!!!
+## v2.0.0
+
+- Updated to support FMD server version 0.11.0, needed to add CmdSig to the /commands post endpoint
+- Not %100 tested but it should do fine-
