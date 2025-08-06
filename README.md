@@ -2,6 +2,8 @@
 
 This is an API for the [FMD Server](https://gitlab.com/fmd-foss/fmd-server) (Version 0.11.0)
 
+**Also has support for upcoming speed, accuracy, and altitude fields!** (v 0.12.0?)
+
 Android app: [FMD App](https://gitlab.com/fmd-foss/fmd-android)
 
 This uses the `Modern` encrytion, the API is based off the scripts found in [FMD Server Web](https://gitlab.com/fmd-foss/fmd-server) and looking at the network logs

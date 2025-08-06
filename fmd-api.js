@@ -10,18 +10,21 @@ const defaultServer = "https://fmd.nulide.de:1008/"
 
 /**
  * @typedef {Object} loginData
- * @property {Object} loginData.accessToken Used for server auth
- * @property {CryptoKey} loginData.privateKey Uses to decrypt data returned
+ * @property {Object} accessToken Used for server auth
+ * @property {CryptoKey} privateKey Uses to decrypt data returned
  */
 
 /**
  * @typedef {Object} LocationData
- * @property {'fused' | 'gps' | 'network' | 'opencell'} LocationData.provider What provider provided the lat and lon data
- * @property {Number} LocationData.date Date the loction was saved (Number)
- * @property {String} LocationData.bat Battery level of device
- * @property {String} LocationData.lon Device Longitude
- * @property {String} LocationData.lat Device Latitude
- * @property {String} LocationData.time Date the loction was saved (String)
+ * @property {'fused' | 'gps' | 'network' | 'opencell'} provider What provider provided the lat and lon data
+ * @property {Number} date Date the loction was saved (Number)
+ * @property {String} bat Battery level of device
+ * @property {String} lon Device Longitude
+ * @property {String} lat Device Latitude
+ * @property {String} time Date the loction was saved (String)
+ * @property {String} [speed] Current speed (kph)
+ * @property {String} [accuracy] Accuracy of location
+ * @property {String} [altitude] Altitude of location
  */
 
 class FMD_API {
@@ -103,11 +106,20 @@ class FMD_API {
     }
 
     /**
-     * Get location
-     * @property {Number} requestedIndex Location index
+     * Get location (1:1 of FMD.locate)
+     * @property {Number} requestedIndex Location index (Default: -1)
      * @returns {Promise<LocationData>}
      */
-    async locate(requestedIndex) {
+    async getLocation(index = -1) {
+        return await this.locate(index);
+    }
+
+    /**
+     * Get location
+     * @property {Number} requestedIndex Location index (Default: -1)
+     * @returns {Promise<LocationData>}
+     */
+    async locate(requestedIndex = -1) {
         try {
             let newestLocationDataIndex = await this.getLocationCount()
 
@@ -161,9 +173,9 @@ class FMD_API {
     }
 
     /**
-     * Send command to device
-     * @deprecated Couldn't get this to work
-     * @returns {null} Doesn't work!!
+     * Get old commands!
+     * @deprecated Doesn't work currently - Not impemnted fully FMD side
+     * @returns {null} Doesn't do anything for now!!
      */
     async getOldCommands() {
         return null
