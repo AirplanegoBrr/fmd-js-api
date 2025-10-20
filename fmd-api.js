@@ -1,11 +1,11 @@
 const axios = require('axios');
 const { hashPasswordForLogin, unwrapPrivateKey, decryptPacketModern, signString } = require('./crypto');
 // This whole file is vodo magic
-const defaultServer = "https://fmd.nulide.de:1008/"
+const defaultServer = "https://fmd.nulide.de/"
 
 /**
  * @typedef {Object} apiConfig
- * @property {String} apiConfig.url URL of server (Defaults to: https://fmd.nulide.de:1008/)
+ * @property {String} apiConfig.url URL of server (Defaults to: https://fmd.nulide.de/)
  */
 
 /**
@@ -17,14 +17,15 @@ const defaultServer = "https://fmd.nulide.de:1008/"
 /**
  * @typedef {Object} LocationData
  * @property {'fused' | 'gps' | 'network' | 'opencell'} provider What provider provided the lat and lon data
- * @property {Number} date Date the loction was saved (Number)
- * @property {String} bat Battery level of device
- * @property {String} lon Device Longitude
- * @property {String} lat Device Latitude
+ * @property {Date} date Date the loction was saved (Number)
+ * @property {Number} bat Battery level of device
+ * @property {Number} lon Device Longitude
+ * @property {Number} lat Device Latitude
  * @property {String} time Date the loction was saved (String)
- * @property {String} [speed] Current speed (kph)
- * @property {String} [accuracy] Accuracy of location
- * @property {String} [altitude] Altitude of location
+ * @property {Number} [speed] Current speed (kph)
+ * @property {Number} [accuracy] Accuracy of location
+ * @property {Number} [altitude] Altitude of location
+ * @property {Number} [bearing] Bearing of location
  */
 
 class FMD_API {
@@ -37,6 +38,7 @@ class FMD_API {
     constructor(deviceID, password, config = {}) {
         this.deviceID = deviceID;
         this.password = password;
+        this.lastCheck = 0;
 
         config ??= {}
         config.url ??= defaultServer
@@ -78,7 +80,7 @@ class FMD_API {
             const { decryptKey, signKey } = await unwrapPrivateKey(this.password, keyData.Data);
             this.privateKeyForDecrypt = decryptKey;
             this.privateKeyForSign = signKey;
-            
+
             return {
                 accessToken: this.accessToken,
                 privateKeyForDecrypt: this.privateKeyForDecrypt,
@@ -90,11 +92,61 @@ class FMD_API {
         }
     }
 
+
+    /**
+     * Checks if valid login- if none is present then a relogin will be made, will return false if a valid login can't be made
+     * @returns {Promise<boolean>}
+     */
+    async checkLogin() {
+        const FIVE_MINUTES = 5 * 60 * 1000;
+
+        const now = Date.now();
+        const timeSinceLastCheck = now - this.lastCheck;
+
+        // If we already have a token and last check was recent, skip validation
+        if (this.accessToken && timeSinceLastCheck < FIVE_MINUTES) return true;
+
+        // If no access token yet, try to log in
+        if (!this.accessToken) {
+            try {
+                await this.login();
+            } catch (err) {
+                console.error("Initial login failed:", err);
+                return false;
+            }
+        }
+
+        // Try a lightweight validation request
+        try {
+            const res = await axios.put(`${this.url}/locationDataSize`, { IDT: this.accessToken, Data: "unused" });
+            const count = parseInt(res.data?.Data, 10);
+            if (!isNaN(count)) {
+                this.lastCheck = now;
+                return true; // token still valid
+            }
+        } catch (err) {
+            // console.warn("Access token likely invalid, retrying login...");
+            try {
+                await this.login();
+                this.lastCheck = Date.now();
+                return true;
+            } catch (e) {
+                console.error("Re-login failed:", e);
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+
     /**
      * 
      * @returns {Promise<Number>}
      */
     async getLocationCount() {
+        await this.checkLogin();
+
         try {
             let responseDataSize = await axios.put(`${this.url}/locationDataSize`, { IDT: this.accessToken, Data: "unused" })
             let newestLocationDataIndex = parseInt(responseDataSize.data.Data, 10) - 1;
@@ -120,6 +172,8 @@ class FMD_API {
      * @returns {Promise<LocationData>}
      */
     async locate(requestedIndex = -1) {
+        await this.checkLogin();
+
         try {
             let newestLocationDataIndex = await this.getLocationCount()
 
@@ -135,7 +189,10 @@ class FMD_API {
             // console.log("responseLocation", responseLocation.data)
 
             let rawLocation = await decryptPacketModern(this.privateKeyForDecrypt, responseLocation.data.Data)
-            let location = JSON.parse(rawLocation)
+            let location = JSON.parse(rawLocation);
+
+            let tDate = new Date(location?.date);
+            if (tDate) location.date = tDate;
 
             return location
         } catch (error) {
@@ -150,10 +207,12 @@ class FMD_API {
      * @returns {Promise<Boolean>} Whether the command was successfully sent
      */
     async sendToPhone(command) {
+        await this.checkLogin();
+
         try {
             const unixTime = Date.now(); // Current time in milliseconds
             const toSign = `${unixTime}:${command}`;
-            
+
             // Sign the command using the private key
             const signature = await signString(this.privateKeyForSign, toSign);
 
@@ -188,6 +247,8 @@ class FMD_API {
      * @returns {Promise<Number>} Count of picturs on the server
      */
     async getPictureCount() {
+        await this.checkLogin();
+
         try {
             let resPictureSize = await axios.put(`${this.url}/pictureSize`, { IDT: this.accessToken, Data: "" })
             return resPictureSize.data.Data
@@ -203,6 +264,8 @@ class FMD_API {
      * @returns {Promise<Buffer>} Picture buffer
      */
     async getPicture(pictureIndex) {
+        await this.checkLogin();
+
         try {
             const resPicture = await axios.put(`${this.url}/picture`, { IDT: this.accessToken, Data: pictureIndex.toString() })
             let pictureDataRaw = resPicture.data

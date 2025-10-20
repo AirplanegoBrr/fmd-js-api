@@ -1,8 +1,6 @@
 # @airplanegobrr/fmd-js-api
 
-This is an API for the [FMD Server](https://gitlab.com/fmd-foss/fmd-server) (Version 0.11.0)
-
-**Also has support for upcoming speed, accuracy, and altitude fields!** (v 0.12.0?)
+This is an API for the [FMD Server](https://gitlab.com/fmd-foss/fmd-server) (Version 0.12.0)
 
 Android app: [FMD App](https://gitlab.com/fmd-foss/fmd-android)
 
@@ -22,9 +20,10 @@ PR's and Issues are welcome!
 const FMD_API = require("@airplanegobrr/fmd-js-api")
 
 let fmdAPI = new FMD_API("<deviceID>", "<password>", {
-    url: "https://fmd.nulide.de:1008/" // Defaults to https://fmd.nulide.de:1008/ if none is supplied
+    url: "https://fmd.nulide.de/" // Defaults to https://fmd.nulide.de/ if none is supplied
 })
 
+// You don't need to explicitly login- but its good practice
 fmdAPI.login().then(async (data)=>{
     // Data has an object with accessToken and privateKey, You really dont need to use these but it's nice to have incase
 
@@ -57,6 +56,15 @@ fmdAPI.login().then(async (data)=>{
 - A: This is a big risk, I didn't add it as again its a risk- if you want to do it do `fmdAPI.sendToPhone("delete <pin>")`, this will **NOT** be added to the commands object- too risky
 
 # Updates
+
+## v2.1.1
+- Fixed up code 
+- Supports up to FMD server v0.12.1 (Tested- works like normal)
+- Updated default FMD server
+- Auto login and relogin (this was annoying to handle on the user end)
+
+# v2.1.0
+- Added alpha tags for support of FMD server v0.12.0
 
 ## v2.0.0
 
