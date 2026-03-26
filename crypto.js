@@ -15,7 +15,6 @@ const ARGON2_HASH_LENGTH = 32;
 const ARGON2_SALT_LENGTH = 16;
 
 const CONTEXT_STRING_ASYM_KEY_WRAP = "context:asymmetricKeyWrap";
-const CONTEXT_STRING_FMD_PIN = "context:fmdPin"; // Not even used??
 const CONTEXT_STRING_LOGIN = "context:loginAuthentication";
 
 function base64Decode(encodedData) {

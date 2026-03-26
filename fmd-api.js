@@ -1,11 +1,11 @@
 const axios = require('axios');
 const { hashPasswordForLogin, unwrapPrivateKey, decryptPacketModern, signString } = require('./crypto');
 // This whole file is vodo magic
-const defaultServer = "https://fmd.nulide.de/"
+const defaultServer = "https://server.fmd-foss.org/"
 
 /**
  * @typedef {Object} apiConfig
- * @property {String} apiConfig.url URL of server (Defaults to: https://fmd.nulide.de/)
+ * @property {String} apiConfig.url URL of server (Defaults to: https://server.fmd-foss.org/)
  */
 
 /**
@@ -197,6 +197,48 @@ class FMD_API {
             return location
         } catch (error) {
             console.error("Location get failed:", error);
+            throw new Error("Unable to get location.");
+        }
+    }
+
+    /**
+     * Get locations, oldest (first index) -> newest (last index) (1:1 of FMD.locates)
+     * @returns {Promise<LocationData[]>}
+     */
+    async getLocations() {
+        return await this.locates();
+    }
+
+    /**
+     * Get locations, oldest (first index) -> newest (last index)
+     * @returns {Promise<LocationData[]>}
+     */
+    async locates() {
+        await this.checkLogin();
+
+        try {
+            let responseLocations = await axios.put(`${this.url}/locations`, {
+                IDT: this.accessToken,
+                Data: "unused"
+            });
+
+            // console.log("responseLocation", responseLocation.data)
+
+            const locations = []
+
+            for (let rawEncryptedLocationData of responseLocations.data) {
+                let encryptedLocationData = JSON.parse(rawEncryptedLocationData);
+
+                let rawLocation = await decryptPacketModern(this.privateKeyForDecrypt, encryptedLocationData.Data)
+                let location = JSON.parse(rawLocation);
+                let tDate = new Date(location?.date);
+                if (tDate) location.date = tDate;
+                locations.push(location)
+            }
+
+            return locations
+        } catch (error) {
+            console.error("Locations get failed:", error);
             throw new Error("Unable to get location.");
         }
     }

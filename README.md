@@ -1,6 +1,6 @@
 # @airplanegobrr/fmd-js-api
 
-This is an API for the [FMD Server](https://gitlab.com/fmd-foss/fmd-server) (Version 0.12.0)
+This is an API for the [FMD Server](https://gitlab.com/fmd-foss/fmd-server) (Version 0.14.2)
 
 Android app: [FMD App](https://gitlab.com/fmd-foss/fmd-android)
 
@@ -20,7 +20,7 @@ PR's and Issues are welcome!
 const FMD_API = require("@airplanegobrr/fmd-js-api")
 
 let fmdAPI = new FMD_API("<deviceID>", "<password>", {
-    url: "https://fmd.nulide.de/" // Defaults to https://fmd.nulide.de/ if none is supplied
+    url: "https://server.fmd-foss.org/" // Defaults to https://server.fmd-foss.org/ if none is supplied
 })
 
 // You don't need to explicitly login- but its good practice
@@ -56,6 +56,9 @@ fmdAPI.login().then(async (data)=>{
 - A: This is a big risk, I didn't add it as again its a risk- if you want to do it do `fmdAPI.sendToPhone("delete <pin>")`, this will **NOT** be added to the commands object- too risky
 
 # Updates
+
+## v2.2.0
+- Added locations API
 
 ## v2.1.1
 - Fixed up code 
